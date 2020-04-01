@@ -1,6 +1,7 @@
+import { describe, it } from 'mocha';
 import * as assert from 'assert';
 
-import * as t from '../src/index';
+import * as t from '../../src/index';
 
 describe('the package', () => {
     it('should work', () => {
