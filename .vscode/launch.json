@@ -5,22 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "node",
+            "name": "Extension Tests",
+            "type": "extensionHost",
             "request": "launch",
-            "name": "Run Tests",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "runtimeExecutable": "${execPath}",
             "args": [
-                "--timeout",
-                "999999",
-                "--colors",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/js/ci/tests.js"
+            ],
+            "outFiles": [
                 "${workspaceFolder}/js/test/**/*.js"
             ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
-            "preLaunchTask": "tsc: build - tsconfig.json",
-            "outFiles": [
-                "${workspaceFolder}/js/**/*.js"
-            ]
+            "preLaunchTask": "npm: watch"
         }
+
     ]
 }
