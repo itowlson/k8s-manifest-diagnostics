@@ -3,9 +3,9 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-import * as t from '../../src/index';
+import * as t from '../src/index';
 
-const TESTDATADIR = path.join(__dirname, '../../../ts/test/data');
+const TESTDATADIR = path.join(__dirname, '../../ts/test/data');
 
 describe('the package', () => {
     it('should work', () => {

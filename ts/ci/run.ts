@@ -10,7 +10,7 @@ async function main() {
 
         // The path to the extension test script
         // Passed to --extensionTestsPath
-        const extensionTestsPath = path.resolve(__dirname, '../test/suite/index');
+        const extensionTestsPath = path.resolve(__dirname, '../test/index');
 
         const vscodeExecutablePath = await downloadAndUnzipVSCode('1.43.2');
         // const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);

@@ -17,7 +17,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node js/test/run.js"
+    "test": "npm run compile && node js/ci/run.js"
   },
   "repository": {
     "type": "git",
