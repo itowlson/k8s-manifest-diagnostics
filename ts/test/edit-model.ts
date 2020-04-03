@@ -4,9 +4,10 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 import * as kd from '../src/index';
+import { withTempFileCopy } from './testutils/tempfile';
 
 const TEST_DATA_DIR = path.join(__dirname, '../../ts/test/data');
-const SIMPLE_MANIFEST = path.join(TEST_DATA_DIR, 'simple-manifest.yaml');
+const SIMPLE_MANIFEST = 'simple-manifest.yaml';
 
 function lineText(document: vscode.TextDocument, containing: string): string {
     const index = document.getText().indexOf(containing);
@@ -27,14 +28,23 @@ function insertIndex(document: vscode.TextDocument, after: string, before: strin
     return index + after.length;
 }
 
+async function withTestDocument(testFileName: string, fn: (doc: vscode.TextDocument) => Promise<void>): Promise<void> {
+    const sourceFilePath = path.join(TEST_DATA_DIR, testFileName);
+    await withTempFileCopy(sourceFilePath, async (tempFilePath) => {
+        const document = await vscode.workspace.openTextDocument(tempFilePath);
+        return await fn(document);
+    });
+}
+
 describe('inserting text into a YAML document', () => {
     it('should work on the happy path', async () => {
-        const doc = await vscode.workspace.openTextDocument(SIMPLE_MANIFEST);
-        const wsedit = new vscode.WorkspaceEdit();
+        withTestDocument(SIMPLE_MANIFEST, async (doc) => {
+            const wsedit = new vscode.WorkspaceEdit();
 
-        const insertAt = insertIndex(doc, 'image: ', 'zotifier');
-        kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
-        await vscode.workspace.applyEdit(wsedit);
-        assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
+            const insertAt = insertIndex(doc, 'image: ', 'zotifier');
+            kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
+            await vscode.workspace.applyEdit(wsedit);
+            assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
+        });
     });
 });
