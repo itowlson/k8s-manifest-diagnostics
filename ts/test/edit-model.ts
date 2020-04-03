@@ -1,4 +1,5 @@
-import { describe, it } from 'mocha';
+import { describe } from 'mocha';
+import * as mocha from 'mocha';
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -32,19 +33,28 @@ async function withTestDocument(testFileName: string, fn: (doc: vscode.TextDocum
     const sourceFilePath = path.join(TEST_DATA_DIR, testFileName);
     await withTempFileCopy(sourceFilePath, async (tempFilePath) => {
         const document = await vscode.workspace.openTextDocument(tempFilePath);
-        return await fn(document);
+        await fn(document);
+    });
+}
+
+async function editTestDocument(testFileName: string, fn: (doc: vscode.TextDocument, wsedit: vscode.WorkspaceEdit) => Promise<void>): Promise<void> {
+    await withTestDocument(testFileName, async (doc) => {
+        const wsedit = new vscode.WorkspaceEdit();
+        await fn(doc, wsedit);
+    });
+}
+
+function it(title: string, testFileName: string, fn: (doc: vscode.TextDocument, wsedit: vscode.WorkspaceEdit) => Promise<void>): mocha.Test {
+    return mocha.it(title, async () => {
+        await editTestDocument(testFileName, fn);
     });
 }
 
 describe('inserting text into a YAML document', () => {
-    it('should work on the happy path', async () => {
-        withTestDocument(SIMPLE_MANIFEST, async (doc) => {
-            const wsedit = new vscode.WorkspaceEdit();
-
-            const insertAt = insertIndex(doc, 'image: ', 'zotifier');
-            kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
-            await vscode.workspace.applyEdit(wsedit);
-            assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
-        });
+    it('should work on the happy path', SIMPLE_MANIFEST, async (doc, wsedit) => {
+        const insertAt = insertIndex(doc, 'image: ', 'zotifier');
+        kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
     });
 });
