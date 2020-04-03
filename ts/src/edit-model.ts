@@ -47,5 +47,5 @@ function combineOneInsert(wsedit: vscode.WorkspaceEdit, document: vscode.TextDoc
     wsedit.insert(document.uri, document.positionAt(manifestEdit.at), manifestEdit.text);
 }
 
-function combineOneMergeValues(wsedit: vscode.WorkspaceEdit, document: vscode.TextDocument, manifestEdit: MergeValuesEdit): void {
+function combineOneMergeValues(_wsedit: vscode.WorkspaceEdit, _document: vscode.TextDocument, _manifestEdit: MergeValuesEdit): void {
 }
