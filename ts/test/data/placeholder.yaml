@@ -1,4 +1,0 @@
-apiVersion: foo
-kind: Bar
-metadata:
-  name: zot

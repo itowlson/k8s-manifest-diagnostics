@@ -1,3 +1,1 @@
-export function hello(who: string): string {
-    return `Hello, ${who}`;
-}
+export * from './edit-model';
