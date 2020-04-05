@@ -1,0 +1,14 @@
+{
+    "apiVersion": "foo",
+    "kind": "Bar",
+    "metadata": {
+        "name": "zot"
+    },
+    "spec": {
+        "action": "Reticulate",
+        "image": "zotifier:1.0.0"
+    },
+    "status": {
+        "mood": "Tranquil"
+    }
+}
