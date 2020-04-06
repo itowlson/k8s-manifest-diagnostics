@@ -44,8 +44,13 @@ function combineOne(wsedit: vscode.WorkspaceEdit, document: vscode.TextDocument,
 }
 
 function combineOneInsert(wsedit: vscode.WorkspaceEdit, document: vscode.TextDocument, manifestEdit: InsertTextEdit): void {
+    if (manifestEdit.at < 0 || manifestEdit.at > document.getText().length) {
+        return;
+    }
+    // We can't escape characters in any meaningful way so this has to be the responsibility of the caller
     wsedit.insert(document.uri, document.positionAt(manifestEdit.at), manifestEdit.text);
 }
 
 function combineOneMergeValues(_wsedit: vscode.WorkspaceEdit, _document: vscode.TextDocument, _manifestEdit: MergeValuesEdit): void {
+    throw new Error(`TODO: this`);
 }

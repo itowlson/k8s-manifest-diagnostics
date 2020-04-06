@@ -58,6 +58,20 @@ describe('inserting text into a YAML document', () => {
         await vscode.workspace.applyEdit(wsedit);
         assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
     });
+    it('should be a no-op before start of document', SIMPLE_MANIFEST, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'insert', at: -3, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+    it('should be a no-op after end of document', SIMPLE_MANIFEST, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'insert', at: 1000, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
 });
 
 describe('inserting text into a JSON document', () => {
@@ -66,5 +80,19 @@ describe('inserting text into a JSON document', () => {
         kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
         await vscode.workspace.applyEdit(wsedit);
         assert.equal('"image": "saferegistry.io/zotifier:1.0.0"', lineText(doc, '"image": '));
+    });
+    it('should be a no-op before start of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'insert', at: -3, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+    it('should be a no-op after end of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'insert', at: 1000, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
     });
 });
