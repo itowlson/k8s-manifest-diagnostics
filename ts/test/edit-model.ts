@@ -21,6 +21,19 @@ function lineText(document: vscode.TextDocument, containing: string): string {
     return line.text.trim();
 }
 
+// function numRange(start: number, end: number): number[] {
+//     const arr = Array.of<number>();
+//     for (let i = start; i <= end; ++i) {
+//         arr.push(i);
+//     }
+//     return arr;
+// }
+
+// function lineRangeText(document: vscode.TextDocument, startLine: number, endLine: number): string {
+//     return numRange(startLine, endLine).map((i) => document.lineAt(i).text)
+//                                        .join('\n');
+// }
+
 function insertIndex(document: vscode.TextDocument, after: string, before: string): number {
     const text = after + before;
     const index = document.getText().indexOf(text);
@@ -28,6 +41,15 @@ function insertIndex(document: vscode.TextDocument, after: string, before: strin
         assert.fail(`Expected document to contain ${text} but it did not`);
     }
     return index + after.length;
+}
+
+function replaceRange(document: vscode.TextDocument, after: string, replace: string): kd.Range {
+    const text = after + replace;
+    const index = document.getText().indexOf(text);
+    if (index < 0) {
+        assert.fail(`Expected document to contain ${text} but it did not`);
+    }
+    return { start: index + after.length, end: index + text.length };
 }
 
 async function withTestDocument(testFileName: string, fn: (doc: vscode.TextDocument) => Promise<void>): Promise<void> {
@@ -56,7 +78,7 @@ describe('inserting text into a YAML document', () => {
         const insertAt = insertIndex(doc, 'image: ', 'zotifier');
         kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
         await vscode.workspace.applyEdit(wsedit);
-        assert.equal('image: saferegistry.io/zotifier:1.0.0', lineText(doc, 'image: '));
+        assert.equal(lineText(doc, 'image: '), 'image: saferegistry.io/zotifier:latest');
     });
     it('should be a no-op before start of document', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
         const before = doc.getText();
@@ -74,12 +96,70 @@ describe('inserting text into a YAML document', () => {
     });
 });
 
+describe('replacing text in a YAML document', () => {
+    it('should work on the happy path', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, 'image: zotifier:', 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1.0.0' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, 'image: '), 'image: zotifier:1.0.0');
+    });
+    it('should work if the replacement is shorter than the source', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, 'image: zotifier:', 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, 'image: '), 'image: zotifier:1');
+    });
+    it('should work if the replacement is longer than the source', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, 'image: zotifier:', 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1234.123.4567' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, 'image: '), 'image: zotifier:1234.123.4567');
+    });
+    it('should work if the replacement is empty', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, 'image: zotifier:', 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, 'image: '), 'image: zotifier:');
+    });
+    it('should be a no-op before start of document', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'replace', at: { start: -3, end: 2 }, text: 'latest' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+    it('should be a no-op after end of document', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'replace', at: { start: 1000, end: 1002 }, text: 'latest' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+});
+
+// describe('merging a value into a YAML document', () => {
+//     it('should be able to insert a map into an existing map', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+//         const map = kp.asTraversable(kp.parseYAML(doc.getText())[0]);
+//         const spec = map.map('spec');
+//         kd.combine(wsedit, doc, { kind: 'merge-values', into: spec, values: { imagePullPolicy: "Always" } });
+//         await vscode.workspace.applyEdit(wsedit);
+//         const expected = `
+// spec:
+//   action: Reticulate
+//   image: zotifier:1.0.0
+//   imagePullPolicy: Always
+// status:
+// `;
+//         assert.equal(lineRangeText(doc, 4, 8), expected.trim());
+//     });
+// });
+
 describe('inserting text into a JSON document', () => {
     it('should work on the happy path', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
         const insertAt = insertIndex(doc, `"image": "`, `zotifier`);
         kd.combine(wsedit, doc, { kind: 'insert', at: insertAt, text: 'saferegistry.io/' });
         await vscode.workspace.applyEdit(wsedit);
-        assert.equal('"image": "saferegistry.io/zotifier:1.0.0"', lineText(doc, '"image": '));
+        assert.equal(lineText(doc, '"image": '), '"image": "saferegistry.io/zotifier:latest"');
     });
     it('should be a no-op before start of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
         const before = doc.getText();
@@ -91,6 +171,47 @@ describe('inserting text into a JSON document', () => {
     it('should be a no-op after end of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
         const before = doc.getText();
         kd.combine(wsedit, doc, { kind: 'insert', at: 1000, text: 'saferegistry.io/' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+});
+
+describe('replacing text in a JSON document', () => {
+    it('should work on the happy path', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, `"image": "zotifier:`, 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1.0.0' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, '"image": '), '"image": "zotifier:1.0.0"');
+    });
+    it('should work if the replacement is shorter than the source', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, `"image": "zotifier:`, 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, '"image": '), '"image": "zotifier:1"');
+    });
+    it('should work if the replacement is longer than the source', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, `"image": "zotifier:`, 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '1234.123.4567' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, '"image": '), '"image": "zotifier:1234.123.4567"');
+    });
+    it('should work if the replacement is empty', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const targetRange = replaceRange(doc, `"image": "zotifier:`, 'latest');
+        kd.combine(wsedit, doc, { kind: 'replace', at: targetRange, text: '' });
+        await vscode.workspace.applyEdit(wsedit);
+        assert.equal(lineText(doc, '"image": '), '"image": "zotifier:"');
+    });
+    it('should be a no-op before start of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'replace', at: { start: -3, end: 2 }, text: 'latest' });
+        await vscode.workspace.applyEdit(wsedit);
+        const after = doc.getText();
+        assert.equal(after, before);
+    });
+    it('should be a no-op after end of document', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
+        const before = doc.getText();
+        kd.combine(wsedit, doc, { kind: 'replace', at: { start: 1000, end: 1002 }, text: 'latest' });
         await vscode.workspace.applyEdit(wsedit);
         const after = doc.getText();
         assert.equal(after, before);

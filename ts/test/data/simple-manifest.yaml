@@ -4,6 +4,6 @@ metadata:
   name: zot
 spec:
   action: Reticulate
-  image: zotifier:1.0.0
+  image: zotifier:latest
 status:
   mood: Tranquil
