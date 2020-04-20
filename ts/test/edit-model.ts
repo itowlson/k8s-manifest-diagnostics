@@ -3,6 +3,7 @@ import * as mocha from 'mocha';
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as kp from 'k8s-manifest-parser';
 
 import * as kd from '../src/index';
 import { withTempFileCopy } from './testutils/tempfile';
@@ -21,18 +22,18 @@ function lineText(document: vscode.TextDocument, containing: string): string {
     return line.text.trim();
 }
 
-// function numRange(start: number, end: number): number[] {
-//     const arr = Array.of<number>();
-//     for (let i = start; i <= end; ++i) {
-//         arr.push(i);
-//     }
-//     return arr;
-// }
+function numRange(start: number, end: number): number[] {
+    const arr = Array.of<number>();
+    for (let i = start; i <= end; ++i) {
+        arr.push(i);
+    }
+    return arr;
+}
 
-// function lineRangeText(document: vscode.TextDocument, startLine: number, endLine: number): string {
-//     return numRange(startLine, endLine).map((i) => document.lineAt(i).text)
-//                                        .join('\n');
-// }
+function lineRangeText(document: vscode.TextDocument, startLine: number, endLine: number): string {
+    return numRange(startLine, endLine).map((i) => document.lineAt(i).text)
+                                       .join('\n');
+}
 
 function insertIndex(document: vscode.TextDocument, after: string, before: string): number {
     const text = after + before;
@@ -137,22 +138,22 @@ describe('replacing text in a YAML document', () => {
     });
 });
 
-// describe('merging a value into a YAML document', () => {
-//     it('should be able to insert a map into an existing map', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
-//         const map = kp.asTraversable(kp.parseYAML(doc.getText())[0]);
-//         const spec = map.map('spec');
-//         kd.combine(wsedit, doc, { kind: 'merge-values', into: spec, values: { imagePullPolicy: "Always" } });
-//         await vscode.workspace.applyEdit(wsedit);
-//         const expected = `
-// spec:
-//   action: Reticulate
-//   image: zotifier:1.0.0
-//   imagePullPolicy: Always
-// status:
-// `;
-//         assert.equal(lineRangeText(doc, 4, 8), expected.trim());
-//     });
-// });
+describe('merging a value into a YAML document', () => {
+    it('should be able to insert a map into an existing map', SIMPLE_MANIFEST_YAML, async (doc, wsedit) => {
+        const map = kp.asTraversable(kp.parseYAML(doc.getText())[0]);
+        const spec = map.map('spec');
+        kd.combine(wsedit, doc, { kind: 'merge-values', into: spec, values: { imagePullPolicy: "Always" } });
+        await vscode.workspace.applyEdit(wsedit);
+        const expected = `
+spec:
+  action: Reticulate
+  image: 'zotifier:latest'
+  imagePullPolicy: Always
+status:
+`;  // TODO: prefer not to introduce quotes around value that was originally not quoted
+        assert.equal(lineRangeText(doc, 4, 8), expected.trim());
+    });
+});
 
 describe('inserting text into a JSON document', () => {
     it('should work on the happy path', SIMPLE_MANIFEST_JSON, async (doc, wsedit) => {
